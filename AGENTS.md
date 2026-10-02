@@ -9,18 +9,20 @@
 ## Comandos Importantes
 
 ```bash
-npm install              # Instalar dependencias
-npx playwright install chromium   # Browser de Playwright (si no se usa CHROME_BIN)
-npm run start:dev        # Desarrollo con watch
-npm run build            # Build producción
-npm run start            # Ejecutar build (node dist/main)
-npm run lint             # ESLint + fix
-npm test                 # Unit tests (Jest)
-npm run test:cov         # Tests con cobertura
-npm run test:e2e         # Tests end-to-end (health check)
-npm run format           # Prettier
-npm run sync -- --mes=9 --anio=2026   # Disparar sincronización desde terminal
+pnpm install             # Instalar dependencias (usar pnpm: no hay package-lock.json)
+pnpm exec playwright install chromium   # Browser de Playwright (si no se usa CHROME_BIN)
+pnpm run start:dev       # Desarrollo con watch
+pnpm run build           # Build producción
+pnpm run start           # Ejecutar build (node dist/main)
+pnpm run lint            # ESLint + fix
+pnpm test                # Unit tests (Jest)
+pnpm run test:cov        # Tests con cobertura
+pnpm run test:e2e        # Tests end-to-end (health check)
+pnpm run format          # Prettier
+pnpm run sync -- --mes=9 --anio=2026   # Disparar sincronización desde terminal
 ```
+
+**Docker:** los Dockerfiles usan pnpm (`pnpm install --frozen-lockfile`); `npm ci` falla porque el repo solo tiene `pnpm-lock.yaml`.
 
 ## Estructura del Proyecto
 

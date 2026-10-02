@@ -8,7 +8,7 @@ Servicio independiente de scraping del **Registro de Compras y Ventas (RCV) del 
 
 ## Versión Actual
 
-**v1.0.0** - Ver [CHANGELOG.md](CHANGELOG.md) para detalles de cambios.
+**v1.0.1** - Ver [CHANGELOG.md](CHANGELOG.md) para detalles de cambios.
 
 ## Tecnologías
 
@@ -55,7 +55,7 @@ Servicio independiente de scraping del **Registro de Compras y Ventas (RCV) del 
 ## Requisitos Previos
 
 - Node.js >= 20.0.0
-- npm >= 9.0.0 (o pnpm)
+- pnpm >= 11.0.0 (este repo usa `pnpm-lock.yaml`; `npm ci` no funciona sin `package-lock.json`)
 - Cuenta de SII con RUT y clave (`SII_RUT`, `SII_PASSWORD`)
 - Backend de Llamativo corriendo y accesible (`BACKEND_URL`)
 
@@ -63,10 +63,10 @@ Servicio independiente de scraping del **Registro de Compras y Ventas (RCV) del 
 
 ```bash
 # Instalar dependencias
-npm install
+pnpm install
 
 # Playwright necesita su Chromium (si no usas CHROME_BIN del sistema)
-npx playwright install chromium
+pnpm exec playwright install chromium
 ```
 
 ## Configuración
@@ -113,13 +113,13 @@ SII_PASSWORD=tu_password_sii
 
 ```bash
 # Desarrollo con watch
-npm run start:dev
+pnpm run start:dev
 
 # Producción
-npm run build && npm run start
+pnpm run build && pnpm run start
 
 # Sincronizar un período desde la terminal
-npm run sync -- --mes=9 --anio=2026
+pnpm run sync -- --mes=9 --anio=2026
 
 # Solo inspeccionar los datos del SII (no toca el backend)
 curl -H "Authorization: Bearer $TOKEN" "http://localhost:3010/rcv/preview?mes=9&anio=2026"

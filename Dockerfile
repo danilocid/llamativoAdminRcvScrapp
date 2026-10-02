@@ -5,15 +5,17 @@ WORKDIR /app
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV PORT=8080
 
-COPY package*.json ./
+RUN npm install -g pnpm@11.1.3
 
-RUN npm ci
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-RUN npx playwright install chromium
+RUN pnpm install --frozen-lockfile
+
+RUN pnpm exec playwright install chromium
 
 COPY . .
 
-RUN npm run build
+RUN pnpm run build
 
 EXPOSE 8080
 

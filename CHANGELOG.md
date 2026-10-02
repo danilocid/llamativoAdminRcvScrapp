@@ -5,6 +5,18 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere al [Versionado Semántico](https://semver.org/lang/es/).
 
+## [1.0.1] - 2026-09-30
+
+### Fixed
+
+- **Docker: `npm ci` fallaba en el build** (`process "/bin/sh -c npm ci" did not complete successfully`): el repo solo tiene `pnpm-lock.yaml`, no `package-lock.json`
+  - `Dockerfile` y `Dockerfile.pi` ahora instalan pnpm 11 y usan `pnpm install --frozen-lockfile`
+  - `Dockerfile.pi` define `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` (usa el Chromium del sistema vía `CHROME_BIN`)
+
+### Changed
+
+- README y AGENTS.md actualizados a pnpm (en este repo `npm install` no funciona)
+
 ## [1.0.0] - 2026-09-30
 
 ### Added
@@ -17,7 +29,7 @@ y este proyecto adhiere al [Versionado Semántico](https://semver.org/lang/es/).
 - `GET /health` — estado del servicio
 - Autenticación de los endpoints con JWT (secret compartido con el backend) o header `x-api-key` opcional
 - `BackendClientService` con JWT cacheado y reintento automático ante un 401 del backend
-- Script CLI `npm run sync` para disparar una sincronización desde la terminal
+- Script CLI `pnpm run sync` para disparar una sincronización desde la terminal
 - Documentación: README, AGENTS.md y `.env.example`
 - Docker (imagen Playwright y variante Raspberry Pi con Chromium del sistema), docker-compose y `cloudbuild.yaml`
 
