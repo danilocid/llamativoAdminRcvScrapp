@@ -8,7 +8,7 @@ Servicio independiente de scraping del **Registro de Compras y Ventas (RCV) del 
 
 ## Versión Actual
 
-**v1.0.4** - Ver [CHANGELOG.md](CHANGELOG.md) para detalles de cambios.
+**v1.0.5** - Ver [CHANGELOG.md](CHANGELOG.md) para detalles de cambios.
 
 ## Tecnologías
 
@@ -26,7 +26,7 @@ Servicio independiente de scraping del **Registro de Compras y Ventas (RCV) del 
                        ┌──────────────────────────────────────────────┐
   cliente (curl,       │  llamativoAdminRcvScrapp (este servicio)     │
   script, Swagger,     │                                              │
-  backend en proxy) ──▶│  GET /rcv/sincronizar  ──▶ Playwright ──┐    │
+  cron en la Pi) ─────▶│  GET /rcv/sincronizar  ──▶ Playwright ──┐    │
                        │        ▲                                │    │
                        │        │ JWT (POST /auth/login)         │    │
                        └────────┼────────────────────────────────┼────┘
@@ -226,7 +226,7 @@ docker compose up -d
 | Login SII y extracción del RCV | **Este servicio** (`SiiScraperService`) |
 | Recibir registros y guardarlos en MySQL | Backend (`POST /purchases/import`) |
 | Dedupe, auto-creación de proveedores, notificaciones | Backend (`PurchasesService.importRcvData`) |
-| Disparar una sincronización | Este servicio (`GET /rcv/sincronizar`) o el proxy `GET /purchases/sincronizar` del backend |
+| Disparar una sincronización | Este servicio: `GET /rcv/sincronizar` (sin autenticación) |
 
 ## Versionado
 

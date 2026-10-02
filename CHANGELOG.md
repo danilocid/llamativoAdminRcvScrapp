@@ -5,6 +5,12 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere al [Versionado Semántico](https://semver.org/lang/es/).
 
+## [1.0.5] - 2026-10-02
+
+### Changed
+
+- **Docs**: el backend ya no dispara el scraping (se eliminó `GET /purchases/sincronizar` y `RCV_SCRAPER_URL` de `llamativo-admin-back-end`); este servicio es el único punto de disparo: `GET /rcv/sincronizar` sin autenticación
+
 ## [1.0.4] - 2026-10-02
 
 ### Fixed
