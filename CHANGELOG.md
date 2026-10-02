@@ -5,6 +5,21 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere al [Versionado Semántico](https://semver.org/lang/es/).
 
+## [1.0.4] - 2026-10-02
+
+### Fixed
+
+- **Períodos sin compras en el SII ya no devuelven `500`**: `waitForResumenData` ya no asume que "sin filas del resumen" = error
+  - Si el SII muestra un mensaje de sin datos ("no se encontraron", "sin registros", …) → devuelve `[]` inmediatamente
+  - Si no hay mensaje pero el formulario quedó operativo tras consultar → asume período vacío (con warning que registra el texto de la página)
+  - Si el SII muestra un mensaje de error o la página no cargó → sigue lanzando excepción
+  - Espera ampliada a 45 s (Raspberry Pi es lenta) y re-confirme de filas antes de declarar vacío
+  - El backend recibe `[]` y responde `200` con "No hay compras para el mes en curso" + notificación
+
+### Added
+
+- Tests unitarios de `waitForResumenData` (5 escenarios: filas, mensaje vacío, vacío silencioso, error SII, página caída)
+
 ## [1.0.3] - 2026-09-30
 
 ### Changed

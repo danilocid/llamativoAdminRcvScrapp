@@ -96,8 +96,9 @@ Idénticas a las del backend de Llamativo:
 1. **401 en `/rcv/preview`**: falta o expiró el JWT → llamar `POST /auth/login`, o configurar `API_KEY`
 2. **502**: no se pudo contactar al backend → verificar `BACKEND_URL` y que el backend esté corriendo
 3. **Fallo de login SII**: verificar `SII_RUT`/`SII_PASSWORD`; el scraping lanza excepción (no devuelve `[]`)
-4. **Chromium no inicia**: en Docker usar la imagen Playwright o `Dockerfile.pi` con `CHROME_BIN=/usr/bin/chromium` y `shm_size: 2gb`
-5. **Timeout**: el scraping completo puede tardar varios minutos; `cloudbuild.yaml` usa `--timeout 600`
+4. **Período sin compras**: no es error → el scraper devuelve `[]` y el backend responde 200 con la notificación "No hay compras para el mes en curso" (si es un error real del SII aparece `El SII respondio con un error: ...`)
+5. **Chromium no inicia**: en Docker usar la imagen Playwright o `Dockerfile.pi` con `CHROME_BIN=/usr/bin/chromium` y `shm_size: 2gb`
+6. **Timeout**: el scraping completo puede tardar varios minutos; `cloudbuild.yaml` usa `--timeout 600`
 
 ## Archivos Importantes para Modificar
 

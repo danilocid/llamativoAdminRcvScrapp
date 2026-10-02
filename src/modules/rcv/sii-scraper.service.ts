@@ -11,12 +11,39 @@ export class SiiScraperService {
 
   private readonly RCV_APP_URL = 'https://www4.sii.cl/consdcvinternetui';
 
+  /** Mensajes típicos del SII cuando el período consultado no tiene datos. */
+  private readonly EMPTY_PATTERNS = [
+    'no se encontraron',
+    'no existen',
+    'no hay información',
+    'no hay informacion',
+    'sin registros',
+    'sin documentos',
+    'sin resultados',
+    'no hay datos',
+    'ningún registro',
+    'ningun registro',
+    '0 resultados',
+  ];
+
+  /** Mensajes de error del SII: ahí sí fallamos (no es un período vacío). */
+  private readonly ERROR_PATTERNS = [
+    'no fue posible',
+    'intente nuevamente',
+    'intente más tarde',
+    'intente mas tarde',
+    'vuelva a intentar',
+    'error al',
+    'problemas técnicos',
+    'problemas tecnicos',
+  ];
+
   /**
    * Extrae los registros de compras del RCV del SII para un mes/año dados.
    *
-   * A diferencia de la versión que vivía en el backend, las fallas se lanzan
-   * como excepción (nunca se devuelve `[]` silenciosamente) para que el
-   * caller pueda distinguir "no hay compras" de "el scraping falló".
+   * Las fallas reales (login, página rota, error del SII) se lanzan como
+   * excepción. Un período sin compras en el SII devuelve `[]` (la tabla del
+   * resumen no se renderiza), no es un error.
    */
   async scrapePurchases(mes: number, anio: number): Promise<PurchaseApiData[]> {
     this.logger.log(`Iniciando scraping RCV SII para ${mes}/${anio}`);
@@ -211,42 +238,115 @@ export class SiiScraperService {
   private async waitForResumenData(page: Page): Promise<void> {
     this.logger.log('Esperando datos del resumen...');
 
+    // Espera filas del resumen o un mensaje de "sin datos" del SII.
+    // El timeout es largo porque la Raspberry Pi es lenta.
     try {
       await page.waitForFunction(
-        () => {
+        (patterns: string[]) => {
           const rows = document.querySelectorAll(
             'table[ng-if*="resumenRegistro"] tbody tr',
           );
-          return rows.length > 0;
+          if (rows.length > 0) return true;
+          const text = (document.body?.innerText || '').toLowerCase();
+          return patterns.some((p) => text.includes(p));
         },
-        { timeout: 30000 },
+        this.EMPTY_PATTERNS,
+        { timeout: 45000 },
       );
-      this.logger.log('Datos del resumen cargados');
-
-      const rowCount = await page
-        .locator('table[ng-if*="resumenRegistro"] tbody tr')
-        .count();
-      this.logger.log(`Filas encontradas en resumen: ${rowCount}`);
     } catch {
-      this.logger.error(
-        'Timeout esperando datos del resumen. Guardando contenido de pagina...',
+      this.logger.warn(
+        'Sin filas del resumen tras 45s, diagnosticando la pagina...',
       );
-      await this.logPageContent(page, 'RESUMEN_TIMEOUT');
-
-      const allTables = await page.evaluate(() => {
-        return Array.from(document.querySelectorAll('table')).map((t) => ({
-          id: t.id,
-          class: t.className,
-          rows: t.rows.length,
-        }));
-      });
-      this.logger.log(`Tablas en pagina: ${JSON.stringify(allTables)}`);
-
-      throw new Error('Timeout esperando datos del resumen');
     }
 
-    await this.dismissModal(page);
-    await page.waitForTimeout(1000);
+    let rowCount = await page
+      .locator('table[ng-if*="resumenRegistro"] tbody tr')
+      .count();
+
+    if (rowCount === 0) {
+      // Confirmación: un texto de ayuda del SII podría parecer "sin datos".
+      await page.waitForTimeout(3000);
+      rowCount = await page
+        .locator('table[ng-if*="resumenRegistro"] tbody tr')
+        .count();
+    }
+
+    if (rowCount > 0) {
+      this.logger.log(`Datos del resumen cargados: ${rowCount} filas`);
+      await this.dismissModal(page);
+      await page.waitForTimeout(1000);
+      return;
+    }
+
+    // Sin filas: puede ser un período vacío o un fallo de la página.
+    const diag = await this.diagnoseEmptyPage(page);
+
+    if (diag.error) {
+      await this.logPageContent(page, 'SII_ERROR');
+      throw new Error(`El SII respondio con un error: "${diag.error}"`);
+    }
+
+    if (diag.vacio) {
+      this.logger.log(
+        `El SII no tiene datos para el periodo (mensaje: "${diag.vacio}")`,
+      );
+      await this.dismissModal(page);
+      return;
+    }
+
+    if (diag.tieneSelectMes && diag.url.includes('consdcvinternetui')) {
+      this.logger.warn(
+        `El resumen quedo sin filas tras consultar; se asume periodo vacio. Texto: ${diag.texto.replace(/\s+/g, ' ')}`,
+      );
+      await this.dismissModal(page);
+      return;
+    }
+
+    this.logger.error(
+      'Timeout esperando datos del resumen. Guardando contenido de pagina...',
+    );
+    await this.logPageContent(page, 'RESUMEN_TIMEOUT');
+
+    const allTables = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('table')).map((t) => ({
+        id: t.id,
+        class: t.className,
+        rows: t.rows.length,
+      }));
+    });
+    this.logger.log(`Tablas en pagina: ${JSON.stringify(allTables)}`);
+
+    throw new Error('Timeout esperando datos del resumen');
+  }
+
+  /**
+   * Revisa el estado actual de la página para distinguir "período vacío"
+   * de "la página no cargó".
+   */
+  private async diagnoseEmptyPage(
+    page: Page,
+  ): Promise<{
+    url: string;
+    texto: string;
+    tieneSelectMes: boolean;
+    error: string | null;
+    vacio: string | null;
+  }> {
+    return await page.evaluate(
+      ({ errors, empties }) => {
+        const text = (document.body?.innerText || '').toLowerCase();
+        const find = (list: string[]) =>
+          list.find((p) => text.includes(p)) || null;
+        return {
+          url: location.href,
+          texto: text.substring(0, 1500),
+          tieneSelectMes: !!document.getElementById('periodoMes'),
+          error: find(errors),
+          vacio: find(empties),
+        };
+      },
+      { errors: this.ERROR_PATTERNS, empties: this.EMPTY_PATTERNS },
+    );
   }
 
   private async extractFromResumenAndDetail(
