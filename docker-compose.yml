@@ -1,0 +1,20 @@
+services:
+  rcv-scrapper:
+    build:
+      context: .
+      dockerfile: Dockerfile.pi
+    container_name: llamativo-rcv-scrapper
+    restart: unless-stopped
+    ports:
+      - "3010:8080"
+    environment:
+      PORT: "8080"
+      ENV: ${ENV}
+      JWT_SECRET: ${JWT_SECRET}
+      BACKEND_URL: ${BACKEND_URL}
+      BACKEND_USER: ${BACKEND_USER}
+      BACKEND_PASSWORD: ${BACKEND_PASSWORD}
+      API_KEY: ${API_KEY}
+      SII_RUT: ${SII_RUT}
+      SII_PASSWORD: ${SII_PASSWORD}
+    shm_size: '2gb'

@@ -1,0 +1,13 @@
+node_modules
+dist
+build
+.git
+.env
+.env.*
+!.env.example
+coverage
+.nyc_output
+debug-screenshots
+*.log
+.vscode
+.idea
