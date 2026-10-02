@@ -31,7 +31,8 @@ ENV PORT=8080
 
 WORKDIR /app
 
-RUN npm install -g pnpm@11.1.3
+# pnpm 11 exige Node >=22.13; con node:20-slim usamos pnpm 10 (Node >=18.12)
+RUN npm install -g pnpm@10.34.6
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 

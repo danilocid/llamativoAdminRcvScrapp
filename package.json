@@ -1,6 +1,6 @@
 {
   "name": "llamativo-rcv-scrapper",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Servicio independiente de scraping del RCV del SII (Playwright) que sincroniza compras con el backend de Llamativo. Sin base de datos propia.",
   "author": "Danilo Cid",
   "private": true,

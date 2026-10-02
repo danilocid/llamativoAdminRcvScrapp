@@ -8,7 +8,7 @@ Servicio independiente de scraping del **Registro de Compras y Ventas (RCV) del 
 
 ## Versión Actual
 
-**v1.0.1** - Ver [CHANGELOG.md](CHANGELOG.md) para detalles de cambios.
+**v1.0.2** - Ver [CHANGELOG.md](CHANGELOG.md) para detalles de cambios.
 
 ## Tecnologías
 

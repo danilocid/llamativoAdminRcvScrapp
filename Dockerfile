@@ -5,7 +5,8 @@ WORKDIR /app
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ENV PORT=8080
 
-RUN npm install -g pnpm@11.1.3
+# pnpm 11 exige Node >=22.13; la imagen de Playwright trae Node 20, usamos pnpm 10
+RUN npm install -g pnpm@10.34.6
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 

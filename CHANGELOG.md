@@ -5,6 +5,13 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere al [Versionado Semántico](https://semver.org/lang/es/).
 
+## [1.0.2] - 2026-09-30
+
+### Fixed
+
+- **Docker: fallaba `pnpm install --frozen-lockfile`** en la Raspberry Pi porque pnpm 11.1.3 exige Node `>=22.13` y la imagen base es `node:20-slim`
+  - Ambos Dockerfiles instalan **pnpm 10.34.6** (compatible con Node >=18.12); verificado con instalación limpia del lockfile
+
 ## [1.0.1] - 2026-09-30
 
 ### Fixed
