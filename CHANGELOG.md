@@ -5,6 +5,15 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere al [Versionado Semántico](https://semver.org/lang/es/).
 
+## [1.0.3] - 2026-09-30
+
+### Changed
+
+- **`GET /rcv/sincronizar` queda sin autenticación**: se elimina `RcvAuthGuard` de ese endpoint (el login contra el backend lo hace el servicio internamente, ya existente)
+- `GET /rcv/preview` mantiene la autenticación (JWT o `x-api-key`)
+- `scripts/sync.mjs` ya no hace login ni envía `x-api-key`
+- Docs (README/AGENTS/.env.example) actualizados
+
 ## [1.0.2] - 2026-09-30
 
 ### Fixed

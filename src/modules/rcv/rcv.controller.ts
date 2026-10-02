@@ -13,14 +13,13 @@ export class RcvController {
   /**
    * Ejecuta el scraping del RCV del SII y envía los registros al backend
    * para su persistencia. Puede tardar varios minutos (scraping real).
+   * Endpoint sin autenticación: el servicio hace login en el backend por su cuenta.
    */
   @Get('sincronizar')
-  @ApiBearerAuth('jwt')
-  @UseGuards(RcvAuthGuard)
   @ApiOperation({
     summary: 'Scraping del RCV + envío al backend',
     description:
-      'Extrae las compras del período indicado desde el SII y las envía a POST {BACKEND_URL}/purchases/import. Requiere Authorization: Bearer <JWT> o el header x-api-key.',
+      'Extrae las compras del período indicado desde el SII y las envía a POST {BACKEND_URL}/purchases/import. No requiere autenticación: internamente el servicio obtiene un JWT con POST {BACKEND_URL}/auth/login (env BACKEND_USER / BACKEND_PASSWORD).',
   })
   @ApiQuery({
     name: 'mes',
@@ -45,6 +44,7 @@ export class RcvController {
   /**
    * Ejecuta el scraping y devuelve los registros crudos en JSON sin
    * enviarlos al backend (no modifica la base de datos).
+   * Requiere autenticación (JWT o x-api-key).
    */
   @Get('preview')
   @ApiBearerAuth('jwt')

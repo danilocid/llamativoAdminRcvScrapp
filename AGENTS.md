@@ -29,7 +29,7 @@ pnpm run sync -- --mes=9 --anio=2026   # Disparar sincronización desde terminal
 ```
 llamativoAdminRcvScrapp/
 ├── scripts/
-│   └── sync.mjs               # CLI: login + disparo de /rcv/sincronizar
+│   └── sync.mjs               # CLI: disparo de /rcv/sincronizar (sin auth)
 ├── src/
 │   ├── common/
 │   │   ├── dto/               # ResponseDto
@@ -53,14 +53,14 @@ llamativoAdminRcvScrapp/
 
 ## Flujo de Datos
 
-1. Cliente → `GET /rcv/sincronizar?mes=&anio=` (JWT o `x-api-key`)
+1. Cliente → `GET /rcv/sincronizar?mes=&anio=` (sin autenticación)
 2. `SiiScraperService.scrapePurchases(mes, anio)` → `PurchaseApiData[]`
 3. `BackendClientService.sendPurchases(...)` → `POST {BACKEND_URL}/purchases/import` con JWT obtenido de `POST {BACKEND_URL}/auth/login` (cacheado 1h, reintento si 401)
 4. Backend persiste, deduplica, auto-crea proveedores y genera notificaciones
 
 ## Autenticación
 
-- **Entrante** (`RcvAuthGuard`): acepta `Authorization: Bearer <JWT>` verificado con `JWT_SECRET` compartido con el backend, **o** header `x-api-key` si la env `API_KEY` está definida.
+- **Entrante**: `GET /rcv/sincronizar` está **abierto** (sin autenticación). `GET /rcv/preview` usa `RcvAuthGuard`: `Authorization: Bearer <JWT>` verificado con `JWT_SECRET` compartido con el backend, **o** header `x-api-key` si la env `API_KEY` está definida.
 - **Saliente** (hacia el backend): `AuthService.getToken()` → `POST {BACKEND_URL}/auth/login` con `BACKEND_USER`/`BACKEND_PASSWORD`, token cacheado 1 hora.
 - `POST /auth/login` de este servicio es un proxy que permite obtener un token sin conocer la URL del backend.
 
@@ -70,7 +70,7 @@ llamativoAdminRcvScrapp/
 PORT (default 3010), ENV
 JWT_SECRET                  # mismo valor que el backend
 BACKEND_URL, BACKEND_USER, BACKEND_PASSWORD
-API_KEY                     # opcional
+API_KEY                     # opcional, solo para /rcv/preview
 CORS_ORIGINS                # opcional
 SII_RUT, SII_PASSWORD
 CHROME_BIN                  # opcional (Docker/Pi)
@@ -93,7 +93,7 @@ Idénticas a las del backend de Llamativo:
 
 ## Errores Comunes
 
-1. **401 en los endpoints**: falta o expiró el JWT → llamar `POST /auth/login`, o configurar `API_KEY`
+1. **401 en `/rcv/preview`**: falta o expiró el JWT → llamar `POST /auth/login`, o configurar `API_KEY`
 2. **502**: no se pudo contactar al backend → verificar `BACKEND_URL` y que el backend esté corriendo
 3. **Fallo de login SII**: verificar `SII_RUT`/`SII_PASSWORD`; el scraping lanza excepción (no devuelve `[]`)
 4. **Chromium no inicia**: en Docker usar la imagen Playwright o `Dockerfile.pi` con `CHROME_BIN=/usr/bin/chromium` y `shm_size: 2gb`

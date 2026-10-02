@@ -8,7 +8,7 @@ Servicio independiente de scraping del **Registro de Compras y Ventas (RCV) del 
 
 ## Versión Actual
 
-**v1.0.2** - Ver [CHANGELOG.md](CHANGELOG.md) para detalles de cambios.
+**v1.0.3** - Ver [CHANGELOG.md](CHANGELOG.md) para detalles de cambios.
 
 ## Tecnologías
 
@@ -47,7 +47,7 @@ Servicio independiente de scraping del **Registro de Compras y Ventas (RCV) del 
 
 **Flujo de una sincronización:**
 
-1. El cliente llama `GET /rcv/sincronizar?mes=&anio=` con un JWT o un `x-api-key`.
+1. El cliente llama `GET /rcv/sincronizar?mes=&anio=` (sin autenticación; el endpoint está abierto).
 2. El servicio hace login en el SII con Playwright, selecciona el período y extrae el resumen + detalle por tipo de documento.
 3. Los registros (`PurchaseApiData[]`) se envían al backend con `POST {BACKEND_URL}/purchases/import`, autenticándose con un JWT obtenido vía `POST {BACKEND_URL}/auth/login`.
 4. El backend deduplica, auto-crea proveedores, guarda las compras y genera las notificaciones.
@@ -55,7 +55,7 @@ Servicio independiente de scraping del **Registro de Compras y Ventas (RCV) del 
 ## Requisitos Previos
 
 - Node.js >= 20.0.0
-- pnpm >= 11.0.0 (este repo usa `pnpm-lock.yaml`; `npm ci` no funciona sin `package-lock.json`)
+- pnpm >= 10.0.0 (este repo usa `pnpm-lock.yaml`; `npm ci` no funciona sin `package-lock.json`)
 - Cuenta de SII con RUT y clave (`SII_RUT`, `SII_PASSWORD`)
 - Backend de Llamativo corriendo y accesible (`BACKEND_URL`)
 
@@ -84,7 +84,7 @@ BACKEND_URL=http://localhost:3000
 BACKEND_USER=tu_usuario
 BACKEND_PASSWORD=tu_password
 
-# (Opcional) alternativa al JWT para llamadas servidor-a-servicio
+# (Opcional) Solo para GET /rcv/preview: alternativa al JWT
 # API_KEY=una_clave_larga_y_aleatoria
 
 # SII
@@ -103,7 +103,7 @@ SII_PASSWORD=tu_password_sii
 | `JWT_SECRET` | **Sí** | Secreto compartido con el backend; valida los JWT entrantes |
 | `BACKEND_URL` | **Sí** | URL base del backend (sin barra final) |
 | `BACKEND_USER` / `BACKEND_PASSWORD` | **Sí** | Credenciales para obtener el JWT en `POST {BACKEND_URL}/auth/login` |
-| `API_KEY` | No | Si está definida, los endpoints también aceptan el header `x-api-key` |
+| `API_KEY` | No | Solo `/rcv/preview`: si está definida, acepta también el header `x-api-key` |
 | `CORS_ORIGINS` | No | Orígenes CORS separados por coma |
 | `SII_RUT` / `SII_PASSWORD` | **Sí** | Credenciales de login del SII |
 | `CHROME_BIN` | No | Ruta al binario de Chromium cuando no se usa el de Playwright |
@@ -129,24 +129,23 @@ La API estará disponible en `http://localhost:3010` y la documentación en `htt
 
 ## Autenticación
 
-Los endpoints protegidos (`/rcv/*`) aceptan **cualquiera** de los dos mecanismos:
-
-1. **JWT** — header `Authorization: Bearer <token>`. Cualquier JWT emitido por el backend sirve, porque ambos comparten `JWT_SECRET`. Se puede obtener un token llamando a `POST /auth/login` de este servicio (que a su vez hace la petición POST al login del backend).
-2. **API Key** — header `x-api-key: <valor>` igual a la variable `API_KEY`. Solo funciona si `API_KEY` está definida; está pensada para llamadas servidor-a-servicio sin hacer login.
+- **`GET /rcv/sincronizar` — sin autenticación.** Cualquiera puede dispararlo; el servicio, por su cuenta, hace login en el backend (`POST {BACKEND_URL}/auth/login` con `BACKEND_USER`/`BACKEND_PASSWORD`) para poder enviar los registros.
+- **`GET /rcv/preview` — protegido**, acepta cualquiera de estos dos mecanismos:
+  1. **JWT** — header `Authorization: Bearer <token>`. Cualquier JWT emitido por el backend sirve, porque ambos comparten `JWT_SECRET`. Se puede obtener un token llamando a `POST /auth/login` de este servicio (que a su vez hace la petición POST al login del backend).
+  2. **API Key** — header `x-api-key: <valor>` igual a la variable `API_KEY`. Solo funciona si `API_KEY` está definida.
 
 ```bash
-# Opción 1: login y luego sincronizar
+# Sincronizar (no requiere token)
+curl "http://localhost:3010/rcv/sincronizar?mes=9&anio=2026"
+
+# Inspeccionar sin persistir (requiere token)
 curl -X POST http://localhost:3010/auth/login \
   -H "Content-Type: application/json" \
   -d '{"user":"admin","password":"123456"}'
 # → { "serverResponseCode": 200, "data": "<JWT>" }
 
-curl "http://localhost:3010/rcv/sincronizar?mes=9&anio=2026" \
+curl "http://localhost:3010/rcv/preview?mes=9&anio=2026" \
   -H "Authorization: Bearer <JWT>"
-
-# Opción 2: API key
-curl "http://localhost:3010/rcv/sincronizar?mes=9&anio=2026" \
-  -H "x-api-key: $API_KEY"
 ```
 
 ## Endpoints
@@ -154,7 +153,7 @@ curl "http://localhost:3010/rcv/sincronizar?mes=9&anio=2026" \
 | Método | Ruta | Auth | Descripción |
 |--------|------|------|-------------|
 | `POST` | `/auth/login` | No | Envía una petición POST al login del backend y devuelve el JWT |
-| `GET` | `/rcv/sincronizar?mes=&anio=` | JWT / API key | Scraping + envío de registros al backend |
+| `GET` | `/rcv/sincronizar?mes=&anio=` | No | Scraping + envío de registros al backend (hace login en el backend por su cuenta) |
 | `GET` | `/rcv/preview?mes=&anio=` | JWT / API key | Scraping sin persistir (devuelve los registros crudos) |
 | `GET` | `/health` | No | Estado del servicio |
 
@@ -165,9 +164,9 @@ curl "http://localhost:3010/rcv/sincronizar?mes=9&anio=2026" \
 ## Testing
 
 ```bash
-npm test          # unitarios (Jest)
-npm run test:cov  # cobertura
-npm run test:e2e  # end-to-end (health check)
+pnpm test          # unitarios (Jest)
+pnpm run test:cov  # cobertura
+pnpm run test:e2e  # end-to-end (health check)
 npm run lint      # ESLint
 ```
 

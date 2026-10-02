@@ -6,10 +6,8 @@
  *   npm run sync -- --mes=9 --anio=2026
  *   npm run sync -- --url=http://localhost:3010
  *
- * Autenticación:
- *   - Si existe API_KEY en el entorno se usa el header `x-api-key`.
- *   - Si no, se hace POST /auth/login (que a su vez hace login en el
- *     backend) y se usa el JWT resultante como Bearer token.
+ * Autenticación: ninguna (GET /rcv/sincronizar está abierto; el login
+ * contra el backend lo hace el servicio).
  */
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -69,24 +67,6 @@ async function main() {
   ).replace(/\/+$/, '');
 
   const headers = { 'Content-Type': 'application/json' };
-
-  if (process.env.API_KEY) {
-    headers['x-api-key'] = process.env.API_KEY;
-    console.log(`Usando x-api-key contra ${base}`);
-  } else {
-    console.log(`Obteniendo JWT vía POST ${base}/auth/login ...`);
-    const login = await fetch(`${base}/auth/login`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({}),
-    });
-    const loginBody = await jsonOrThrow(login);
-    if (loginBody?.serverResponseCode !== 200) {
-      throw new Error(loginBody?.serverResponseMessage || 'Login fallido');
-    }
-    headers.Authorization = `Bearer ${loginBody.data}`;
-    console.log('JWT obtenido correctamente');
-  }
 
   const url = `${base}/rcv/sincronizar?mes=${mes}&anio=${anio}`;
   console.log(`Sincronizando RCV ${mes}/${anio} -> ${url}`);
